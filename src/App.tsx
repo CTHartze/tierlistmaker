@@ -3,6 +3,7 @@ import {
   DragOverlay,
   useDroppable,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable } from "@dnd-kit/sortable";
@@ -16,11 +17,11 @@ type Draggable = {
 };
 
 const defaultDraggables: Draggable[] = [
-  { id: crypto.randomUUID(), src: "brave.png", dz: undefined },
-  { id: crypto.randomUUID(), src: "chrome.png", dz: undefined },
-  { id: crypto.randomUUID(), src: "edge.png", dz: undefined },
-  { id: crypto.randomUUID(), src: "explorer.png", dz: undefined },
-  { id: crypto.randomUUID(), src: "firefox.png", dz: undefined },
+  { id: crypto.randomUUID(), src: "brave.png", dz: "droppable" },
+  { id: crypto.randomUUID(), src: "chrome.png", dz: "droppable" },
+  { id: crypto.randomUUID(), src: "edge.png", dz: "droppable" },
+  { id: crypto.randomUUID(), src: "explorer.png", dz: "droppable" },
+  { id: crypto.randomUUID(), src: "firefox.png", dz: "droppable" },
   { id: crypto.randomUUID(), src: "opera.png", dz: undefined },
   { id: crypto.randomUUID(), src: "safari.png", dz: undefined },
   { id: crypto.randomUUID(), src: "tor.png", dz: undefined },
@@ -42,13 +43,14 @@ export default function App() {
     setActiveDraggable(activeDraggable);
   };
 
-  const handleDragEnd = (e: DragEndEvent) => {
-    console.log(e);
-    if (!e.over) return setActiveDraggable(undefined);
+  const handleDragOver = (e: DragOverEvent) => {
+    if (!e.over) return;
     const overId = e.over.id as string;
     const activeDraggableId = e.active.id as string;
 
     setDraggables((prev) => {
+      const overDraggable = prev.find((draggable) => draggable.id === overId);
+      const overDroppable = !!overDraggable?.dz;
       const oldIndex = prev.findIndex(
         (draggable) => draggable.id === activeDraggableId,
       );
@@ -56,23 +58,38 @@ export default function App() {
 
       if (oldIndex === newIndex) return prev;
 
-      return arrayMove(prev, oldIndex, newIndex);
+      const shiftedItems = arrayMove(prev, oldIndex, newIndex);
+      shiftedItems[newIndex] = {
+        ...shiftedItems[newIndex],
+        dz: overDroppable ? "droppable" : undefined,
+      };
+      return shiftedItems;
     });
+  };
 
+  const handleDragEnd = (e: DragEndEvent) => {
     setActiveDraggable(undefined);
   };
 
+  const freeDraggables = draggables.filter((draggables) => !draggables.dz);
+
   return (
     <div className="w-screen h-screen flex flex-col gap-16 justify-center items-center">
-      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <DndContext
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
         <Droppable draggables={draggables} />
-        {/* <div className="flex gap-2">
-          {draggables
-            .filter((draggable) => !draggable.dz)
-            .map((draggable) => (
+        <SortableContext
+          items={freeDraggables.map((draggables) => draggables.id)}
+        >
+          <div className="flex gap-2">
+            {freeDraggables.map((draggable) => (
               <Draggable key={draggable.id} draggable={draggable} />
             ))}
-        </div> */}
+          </div>
+        </SortableContext>
         <DragOverlay>
           {activeDraggable && (
             <DraggableContent draggable={activeDraggable} isDragging />
@@ -98,7 +115,7 @@ function Droppable({ draggables }: { draggables: Draggable[] }) {
     >
       <SortableContext items={draggables.map((draggable) => draggable.id)}>
         {draggables
-          // .filter((draggable) => draggable.dz)
+          .filter((draggable) => draggable.dz)
           .map((draggable) => (
             <Draggable key={draggable.id} draggable={draggable} />
           ))}
@@ -109,12 +126,14 @@ function Droppable({ draggables }: { draggables: Draggable[] }) {
 
 function Draggable({ draggable }: { draggable: Draggable }) {
   const { id } = draggable;
-  const { setNodeRef, listeners, attributes, transform } = useSortable({ id });
+  const { setNodeRef, listeners, attributes, transform, transition } =
+    useSortable({ id });
 
   const style = {
     transform: transform
       ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
       : undefined,
+    transition,
   };
 
   return (
