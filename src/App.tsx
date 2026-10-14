@@ -36,7 +36,11 @@ const defaultDraggables: Draggable[] = [
 ];
 
 const defaultDroppables: Droppable[] = [
-  { id: "droppable", draggables: [] },
+  { id: "S", draggables: [] },
+  { id: "A", draggables: [] },
+  { id: "B", draggables: [] },
+  { id: "C", draggables: [] },
+  { id: "D", draggables: [] },
   {
     id: "free",
     draggables: defaultDraggables.map((draggable) => draggable.id),
@@ -64,13 +68,13 @@ export default function App() {
     const overId = e.over.id as string;
     const activeDraggableId = e.active.id as string;
 
-    setDroppables((prev) => {
-      const currentDroppable = droppables.find((dp) =>
-        dp.draggables.some((draggable) => draggable === activeDraggableId),
-      );
-      if (!currentDroppable) return;
-      const currentDroppableId = currentDroppable.id;
+    const currentDroppable = droppables.find((dp) =>
+      dp.draggables.some((draggable) => draggable === activeDraggableId),
+    );
+    if (!currentDroppable) return;
+    const currentDroppableId = currentDroppable.id;
 
+    setDroppables((prev) => {
       // Case #1: If hovering over the empty space in Droppable
       if (droppableIds.includes(overId)) {
         const droppable = prev.find((dp) => dp.id === overId)!;
@@ -99,7 +103,7 @@ export default function App() {
       }
 
       // Case #2: If re-arranging items in the same droppable
-      if (
+      else if (
         currentDroppable.draggables.some((draggable) => draggable === overId)
       ) {
         const oldIndex = currentDroppable.draggables.findIndex(
@@ -124,6 +128,38 @@ export default function App() {
       }
 
       // Case #3: If re-arranging between 2 different droppables
+      else if (
+        !currentDroppable.draggables.some((draggable) => draggable === overId)
+      ) {
+        const newDroppable = droppables.find((dp) =>
+          dp.draggables.some((draggable) => draggable === overId),
+        );
+        if (!newDroppable) return prev;
+        const overIndex = newDroppable.draggables.findIndex(
+          (draggable) => draggable === overId,
+        );
+        const newDraggables = newDroppable.draggables.toSpliced(
+          overIndex,
+          0,
+          activeDraggableId,
+        );
+        return prev.map((dp) => {
+          // If not new or old droppable, return as is
+          if (dp.id !== currentDroppableId && dp.id !== newDroppable.id)
+            return dp;
+          // Remove from old one
+          else if (dp.id === currentDroppableId)
+            return {
+              ...dp,
+              draggables: dp.draggables.filter(
+                (draggable) => draggable !== activeDraggableId,
+              ),
+            };
+
+          // Add to new one
+          return { ...dp, draggables: newDraggables };
+        });
+      }
 
       return prev;
     });
@@ -133,7 +169,8 @@ export default function App() {
     setActiveDraggable(undefined);
   };
 
-  const freeDraggables = draggables.filter((draggables) => !draggables.dp);
+  const freeDroppable = droppables.find((dp) => dp.id === "free");
+  if (!freeDroppable) return null;
 
   return (
     <div className="w-screen h-screen flex flex-col gap-16 justify-center items-center">
@@ -142,9 +179,14 @@ export default function App() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        {droppables.map((dp) => (
-          <Droppable droppable={dp} />
-        ))}
+        <div className="w-full">
+          {droppables
+            .filter((dp) => dp.id !== "free")
+            .map((dp) => (
+              <Droppable droppable={dp} />
+            ))}
+        </div>
+        <FreeDroppable droppable={freeDroppable} />
         <DragOverlay>
           {activeDraggable && (
             <DraggableContent draggable={activeDraggable} isDragging />
@@ -157,17 +199,19 @@ export default function App() {
 
 function Droppable({ droppable }: { droppable: Droppable }) {
   const { id, draggables } = droppable;
-  const { setNodeRef, isOver } = useDroppable({ id });
+  const { setNodeRef } = useDroppable({ id });
 
-  const style = {
-    backgroundColor: isOver ? "green" : undefined,
-  };
+  const backgroundColor =
+    droppableColorMap[id as keyof typeof droppableColorMap];
 
   return (
-    <div
-      style={style}
-      className="border border-white bg-[#333] h-30 w-full flex"
-    >
+    <div className="border border-white bg-[#333] h-30 w-full flex">
+      <div
+        className="w-30 flex justify-center items-center text-4xl font-semibold text-black"
+        style={{ backgroundColor }}
+      >
+        {id}
+      </div>
       <div className="flex gap-4">
         <SortableContext items={draggables}>
           {draggables.map((draggableId) => {
@@ -179,7 +223,29 @@ function Droppable({ droppable }: { droppable: Droppable }) {
           })}
         </SortableContext>
       </div>
-      <div ref={setNodeRef} className="bg-amber-300 flex-1" />
+      <div ref={setNodeRef} className="flex-1" />
+    </div>
+  );
+}
+
+function FreeDroppable({ droppable }: { droppable: Droppable }) {
+  const { id, draggables } = droppable;
+  const { setNodeRef } = useDroppable({ id });
+
+  return (
+    <div className="border-2 rounded-lg border-[#333] h-30 w-full flex">
+      <div className="flex gap-4">
+        <SortableContext items={draggables}>
+          {draggables.map((draggableId) => {
+            const draggable = defaultDraggables.find(
+              (draggable) => draggable.id === draggableId,
+            );
+            if (!draggable) return null;
+            return <Draggable key={draggableId} draggable={draggable} />;
+          })}
+        </SortableContext>
+      </div>
+      <div ref={setNodeRef} className="flex-1" />
     </div>
   );
 }
@@ -226,3 +292,11 @@ function DraggableContent({
     />
   );
 }
+
+const droppableColorMap = {
+  S: "#FF5C5C",
+  A: "#FFA24C",
+  B: "#FFD84D",
+  C: "#9BDB5A",
+  D: "#57C7E8",
+};
