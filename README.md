@@ -1,75 +1,148 @@
-# React + TypeScript + Vite
+# Tier List Maker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A clean, fully functional tier list application built with **React**, **TypeScript**, **Vite**, **Tailwind CSS**, and **dnd-kit**.
 
-Currently, two official plugins are available:
+Users can drag items into tier rows, reorder them within a tier, move them between tiers, and drop them into empty rows—with smooth drag-and-drop interactions.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- Drag and drop items using [dnd-kit](https://docs.dndkit.com/)
+- Sort items within the same tier
+- Move items between different tier rows
+- Drop items into empty tiers
+- Visual feedback while hovering over a drop zone
+- Smooth drag animations using `DragOverlay`
+- Responsive, modern UI styled with Tailwind CSS
+- Type-safe data models with TypeScript
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+| Technology       | Purpose                           |
+| ---------------- | --------------------------------- |
+| React            | UI library                        |
+| TypeScript       | Static typing                     |
+| Vite             | Development server and build tool |
+| Tailwind CSS     | Utility-first styling             |
+| dnd-kit          | Drag-and-drop functionality       |
+| dnd-kit/sortable | Sorting and reordering items      |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Make sure you have the following installed:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- [Node.js](https://nodejs.org/) (LTS recommended)
+- npm
 
+### Installation
+
+```bash
+git clone https://github.com/CTHartze/tierlistmaker.git
+cd tierlistmaker
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+### Run the Development Server
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run dev
 ```
+
+Then open the local URL shown in your terminal, usually:
+
+```text
+http://localhost:5173
+```
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+### Preview the Production Build
+
+```bash
+npm run preview
+```
+
+## Project Structure
+
+```text
+src/
+├── assets/          # Item images
+├── components/      # Reusable UI and drag-and-drop components
+├── types/           # TypeScript types
+├── App.tsx          # Main application layout and drag logic
+├── main.tsx         # React entry point
+└── index.css        # Global styles and Tailwind imports
+```
+
+## How It Works
+
+The app uses two core dnd-kit concepts:
+
+- **Draggables**: Individual tier-list items that users can pick up and move.
+- **Droppables**: Tier rows that accept dragged items.
+
+The `DndContext` manages drag events such as:
+
+- `onDragStart`
+- `onDragOver`
+- `onDragEnd`
+
+When an item is dropped, the application updates React state to assign the item to the correct tier. The `SortableContext` enables items to be reordered within a tier.
+
+## Tier Colors
+
+The application uses a conventional tier-list color scheme:
+
+| Tier | Color  | Meaning       |
+| ---- | ------ | ------------- |
+| S    | Red    | Best          |
+| A    | Orange | Excellent     |
+| B    | Yellow | Good          |
+| C    | Green  | Average       |
+| D    | Blue   | Below average |
+
+## Customization
+
+### Add New Items
+
+Add new entries to the default items array, including a unique `id` and image source:
+
+```ts
+const defaultItems: TierItem[] = [
+  {
+    id: "item-1",
+    src: "/assets/item-1.png",
+    tier: undefined,
+  },
+];
+```
+
+### Change Tier Labels
+
+Update the tier configuration to add, remove, or rename tiers.
+
+### Change Colors
+
+Update the tier color map:
+
+```ts
+export const tierColorMap: Record<Tier, string> = {
+  S: "#FF5C5C",
+  A: "#FFA24C",
+  B: "#FFD84D",
+  C: "#9BDB5A",
+  D: "#57C7E8",
+};
+```
+
+## Useful Resources
+
+- [dnd-kit documentation](https://docs.dndkit.com/)
+- [React documentation](https://react.dev/)
+- [Vite documentation](https://vitejs.dev/)
+- [Tailwind CSS documentation](https://tailwindcss.com/docs)
